@@ -1,8 +1,8 @@
-from scapy.all import rdpcap, IP
+from scapy.all import rdpcap, IP, TCP
 from datetime import datetime
 
 with open("capfile.txt", 'r') as file:
-    capfile = file.readline()
+    capfile = file.readline().strip()
 
 packets = rdpcap(capfile)
 print(packets[0])
@@ -16,7 +16,8 @@ total_count = {}
 for pkt in packets:
     ts = datetime.fromtimestamp(float(pkt.time))
     proto = pkt.lastlayer().name
-
+    
+    print(pkt.keys())
     if IP in pkt:
         src = pkt[IP].src
         dst = pkt[IP].dst
