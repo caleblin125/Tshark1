@@ -1,8 +1,8 @@
-from scapy.all import rdpcap, IP
+from scapy.all import rdpcap, IP, TCP
 from datetime import datetime
 
 with open("capfile.txt", 'r') as file:
-    capfile = file.readline()
+    capfile = file.readline().strip()
 
 packets = rdpcap(capfile)
 print(packets[0])
