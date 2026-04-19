@@ -9,6 +9,9 @@ print(packets[0])
 print(packets[0].show())
 
 endpoints = set()
+total_packets = 0
+all_ip = set()
+total_count = {}
 
 for pkt in packets:
     ts = datetime.fromtimestamp(float(pkt.time))
@@ -18,6 +21,25 @@ for pkt in packets:
         src = pkt[IP].src
         dst = pkt[IP].dst
         print(f"{ts} {proto:8} {src} -> {dst}")
-        # adds endpoints to a set (stard, end)
+        # adds endpoints to a set (start, end)
+        all_ip.add(src)
+        all_ip.add(dst)
         endpoints.add((src, dst))
+        # count packets sent and received
+        total_packets += 1
+        if src in total_count:
+            total_count[src][0] += 1
+        else:
+            total_count[src] = [1,0]
+        if dst in total_count:
+            total_count[dst][1] += 1
+        else:
+            total_count[dst] = [0,1]
+
+# total number of packets sent
+print(f"Total packets sent: {total_packets}")
+# number of packets sent and received by each IP
+for address in all_ip:
+    print(f"IP: {address}; total packets sent is {total_count[address][0]} and total received is {total_count[address][1]}")
 print(endpoints)
+
