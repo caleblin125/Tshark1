@@ -1,12 +1,9 @@
 from scapy.all import *
 import re
 
-with open("capfile.txt", 'r') as file:
-    capfile = file.readline().strip()
-
 streams = {}
 filenames = {}
-
+    
 def process(pkt):
     if not (pkt.haslayer(TCP) and pkt.haslayer(Raw) and pkt.haslayer(IP)):
         return
@@ -40,15 +37,41 @@ def process(pkt):
         filenames[key] = match.group(1)
         print(f"[HDR] {filenames[key]} from {key}")
 
-# --- Run once ---
-sniff(offline=capfile, prn=process, store=0)
+def check_exe(capfile):
+    streams.clear()
+    filenames.clear()
+    
+    # --- Run once ---
+    sniff(offline=capfile, prn=process, store=0)
+    
+    exes = []
+    # --- Analyze streams ---
+    for key, data in streams.items():
+        if b'MZ' in data and b'PE' in data:
+            name = filenames.get(key, "unknown.exe")
+            print(f"[!] EXE found in stream {key} → {name}")
+            
+            src = key[0][0]
+            sport = key[0][1]
+            dst = key[1][0]
+            dport = key[1][1]
+            exes.append(
+                {
+                    "filename" : name,
+                    "src" : src,
+                    "sport" : sport,
+                    "dst" : dst,
+                    "dport" : dport
+                }
+            )
 
-# --- Analyze streams ---
-for key, data in streams.items():
-    if b'MZ' in data:
-        name = filenames.get(key, "unknown.exe")
-        print(f"[!] EXE found in stream {key} → {name}")
+            # optional save
+            # with open(name, "wb") as f:
+            #     f.write(data)
+    return exes
 
-        # optional save
-        # with open(name, "wb") as f:
-        #     f.write(data)
+if __name__ == "__main__":
+    with open("capfile.txt", 'r') as file:
+        capfile = file.readline().strip()
+
+    res = check_exe(capfile)
