@@ -2,38 +2,68 @@ import os
 from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
 
+# Importing your custom logic modules
+import detect_exe
+import endpoints
+
 app = Flask(__name__)
 
-# This tells the computer where to save the files people upload
+# Configuration for file uploads
 UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Ensure the upload directory exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
+    # Initialize variables to send to the template
     packets_to_show = []
+    alerts_to_show = []
     filename = None
 
     if request.method == 'POST':
-        # 1. Get the file from the browser
+        # 1. Grab the uploaded file from the request
         uploaded_file = request.files.get('pcap_file')
         
         if uploaded_file and uploaded_file.filename != '':
-            # 2. Clean the filename (removes weird characters for safety)
+            # 2. Secure and save the file
             filename = secure_filename(uploaded_file.filename)
-            
-            # 3. Save the file so we can read it later
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             uploaded_file.save(filepath)
             
-            # This is your dummy data for now
-            packets_to_show = [
-                {'id': 1, 'src': '192.168.1.10', 'dst': '8.8.8.8', 'proto': 'TCP', 'info': 'HTTPS Request'},
-                {'id': 2, 'src': '8.8.8.8', 'dst': '192.168.1.10', 'proto': 'TCP', 'info': 'HTTPS Response'},
-                {'id': 3, 'src': '10.0.0.5', 'dst': '10.0.0.1', 'proto': 'ICMP', 'info': 'Ping'}
-            ]
+            # --- 3. Analysis Phase ---
 
-    return render_template('index.html', packets=packets_to_show, filename=filename)
+            # A. Get Endpoint Data (for the main table)
+            # This calls the function in your endpoints.py
+            try:
+                packets_to_show = endpoints.get_packet_details(filepath)
+            except Exception as e:
+                print(f"Error in endpoint analysis: {e}")
+
+            # B. Get Security Alerts (for the alerts tab)
+            # This calls the check_exe function in detect_exe.py
+            try:
+                exe_findings = detect_exe.check_exe(filepath)
+                for exe in exe_findings:
+                    alerts_to_show.append({
+                        "type": "FILE_TRANSFER",
+                        "title": "Executable Detected",
+                        "detail": f"An EXE file ({exe['filename']}) was found in the network traffic.",
+                        "payload": f"Source: {exe['src']}:{exe['sport']} -> Destination: {exe['dst']}:{exe['dport']}"
+                    })
+            except Exception as e:
+                print(f"Error in EXE detection: {e}")
+
+    # 4. Render the page with all collected data
+    return render_template(
+        'index.html', 
+        packets=packets_to_show, 
+        alerts=alerts_to_show, 
+        filename=filename
+    )
 
 if __name__ == '__main__':
+    # Setting debug=True allows the server to reload automatically on code changes
     app.run(debug=True)

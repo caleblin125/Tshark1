@@ -1,23 +1,29 @@
 from scapy.all import rdpcap, IP
 from datetime import datetime
 
-with open("capfile.txt", 'r') as file:
-    capfile = file.readline()
+def get_packet_details(capfile):
+    packets = rdpcap(capfile)
+    packet_list = []
+    seen_connections = set()
 
-packets = rdpcap(capfile)
-print(packets[0])
-print(packets[0].show())
-
-endpoints = set()
-
-for pkt in packets:
-    ts = datetime.fromtimestamp(float(pkt.time))
-    proto = pkt.lastlayer().name
-
-    if IP in pkt:
-        src = pkt[IP].src
-        dst = pkt[IP].dst
-        print(f"{ts} {proto:8} {src} -> {dst}")
-        # adds endpoints to a set (stard, end)
-        endpoints.add((src, dst))
-print(endpoints)
+    for pkt in packets:
+        if IP in pkt:
+            # Formatting for the HTML table
+            ts = datetime.fromtimestamp(float(pkt.time)).strftime('%H:%M:%S')
+            proto = pkt.lastlayer().name
+            src = pkt[IP].src
+            dst = pkt[IP].dst
+            
+            conn_key = (src, dst, proto)
+            
+            if conn_key not in seen_connections:
+                # This is what actually goes to the HTML
+                packet_list.append({
+                    'time': ts,
+                    'src': src,
+                    'dst': dst,
+                    'proto': proto
+                })
+                seen_connections.add(conn_key)
+                
+    return packet_list # CRITICAL: This sends the data back to interface.py
