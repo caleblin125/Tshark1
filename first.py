@@ -1,18 +1,25 @@
 from scapy.all import rdpcap, IP, TCP
 from datetime import datetime
+from collections import Counter
+import subprocess
+import re
+import requests
 
 with open("capfile.txt", 'r') as file:
     capfile = file.readline().strip()
 
 packets = rdpcap(capfile)
 print(packets[0])
-print(packets[0].show())
+packets[0].show()
 
 endpoints = set()
+<<<<<<< HEAD
 total_packets = 0
 all_ip = set()
 total_count = {}
 
+=======
+>>>>>>> 6e95a4bcbb6f8d601489e96bf379cf90311092ea
 for pkt in packets:
     ts = datetime.fromtimestamp(float(pkt.time))
     proto = pkt.lastlayer().name
