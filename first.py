@@ -16,6 +16,8 @@ endpoints = set()
 for pkt in packets:
     ts = datetime.fromtimestamp(float(pkt.time))
     proto = pkt.lastlayer().name
+    
+    print(pkt.keys())
     if IP in pkt:
         src = pkt[IP].src
         dst = pkt[IP].dst

@@ -1,1 +1,4 @@
 *.pcapng
+capfile.txt
+__pycache__/
+*.py[cod]
