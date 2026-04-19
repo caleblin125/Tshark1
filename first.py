@@ -1,7 +1,10 @@
 from scapy.all import rdpcap, IP
 from datetime import datetime
 
-packets = rdpcap(r'C:\Users\Kay\Desktop\Hackathon CNSA\app-norton-failed.pcapng')
+with open("capfile.txt", 'r') as file:
+    capfile = file.readline()
+
+packets = rdpcap(capfile)
 print(packets[0])
 print(packets[0].show())
 
